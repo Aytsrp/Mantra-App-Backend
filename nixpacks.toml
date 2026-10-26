@@ -9,10 +9,8 @@ cmds = [
 
 [phases.build]
 cmds = [
-    "npm run build",
-    "php artisan config:cache || true",
-    "php artisan route:cache || true"
+    "npm run build"
 ]
 
 [start]
-cmd = "php artisan serve --host=0.0.0.0 --port=$PORT"
+cmd = "php artisan serve --host=0.0.0.0 --port=${PORT:-8000}"
