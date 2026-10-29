@@ -21,7 +21,7 @@ class PembayaranController extends Controller
         $query = Pembayaran::query()
             ->milik((int) $request->attributes->get('wajib_pajak')->id)
             ->filterJenis($p->jenisPajak)->cari($p->q)
-            ->with(['transaksi', 'objekPajak', 'wajibPajak', 'jenisPajak'])
+            ->with(['transaksi', 'objekPajak.rekening', 'wajibPajak', 'jenisPajak'])
             ->withSum('detail as jumlah_dibayar', 'jumlah_pembayaran');
 
         $page = $p->urutkan($query, self::SORT, '-tanggal')->paginate($p->perPage, ['*'], 'page', $p->page);

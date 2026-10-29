@@ -27,7 +27,7 @@ class TunggakanController extends Controller
             ->milik((int) $request->attributes->get('wajib_pajak')->id)
             ->aktif()->tunggakan()
             ->filterJenis($p->jenisPajak)->cari($p->q)
-            ->with(['objekPajak', 'wajibPajak']);
+            ->with(['objekPajak.rekening', 'wajibPajak']);
 
         $page = $p->urutkan($query, self::SORT, '-tanggal')->paginate($p->perPage, ['*'], 'page', $p->page);
 
