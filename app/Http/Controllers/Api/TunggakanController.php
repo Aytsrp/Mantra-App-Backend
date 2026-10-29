@@ -9,6 +9,7 @@ use App\Support\ApiResponse;
 use App\Support\ListParams;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TunggakanController extends Controller
 {
@@ -21,16 +22,34 @@ class TunggakanController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $idWp = (int) $request->attributes->get('wajib_pajak')->id;
         $p = ListParams::from($request);
+        $cacheKey = "tunggakan:list:{$idWp}:{$p->page}:{$p->perPage}:" . md5(($p->jenisPajak ?? '') . ($p->q ?? '') . $request->get('sort', '-tanggal'));
 
-        $query = Transaksi::query()
-            ->milik((int) $request->attributes->get('wajib_pajak')->id)
-            ->aktif()->tunggakan()
-            ->filterJenis($p->jenisPajak)->cari($p->q)
-            ->with(['objekPajak.rekening', 'wajibPajak']);
+        $result = Cache::remember($cacheKey, 60, function () use ($idWp, $p) {
+            $query = Transaksi::query()
+                ->milik($idWp)
+                ->aktif()->tunggakan()
+                ->filterJenis($p->jenisPajak)->cari($p->q)
+                ->with(['objekPajak.rekening', 'wajibPajak']);
 
-        $page = $p->urutkan($query, self::SORT, '-tanggal')->paginate($p->perPage, ['*'], 'page', $p->page);
+            $page = $p->urutkan($query, self::SORT, '-tanggal')->paginate($p->perPage, ['*'], 'page', $p->page);
 
-        return ApiResponse::paginated($page, TunggakanResource::daftar($page->getCollection()));
+            return [
+                'meta' => [
+                    'page' => $page->currentPage(),
+                    'per_page' => $page->perPage(),
+                    'total' => $page->total(),
+                    'total_pages' => $page->lastPage(),
+                ],
+                'data' => TunggakanResource::daftar($page->getCollection()),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $result['data'],
+            'meta' => $result['meta'],
+        ]);
     }
 }
